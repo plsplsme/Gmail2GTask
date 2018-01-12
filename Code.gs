@@ -1,50 +1,82 @@
 /*
 
+Send email and add to task
+
+
+TODO
+- create task (use subject for title, body(1st line?) for detail)
+- organize the files
+
+
 REFERENCE
 https://developers.google.com/apps-script/advanced/tasks
 https://github.com/googlesamples/apps-script/tree/master/simple_tasks
 */
 
-function myFunction() {
+function productionMain() {
   try{
     const taskId = getTaskId("Alwaysgoogle");
-    var task = {
-      tite: 'Pick up dry cleaning',
-      notes: 'Remember to get this done!'
-    };
-    addTask(task, taskId);
+    const validSubject = getValidSubject();
+    const emails = searchThreads(validSubject);
+    
+    //    var task = {
+//      tite: 'Pick up dry cleaning',
+//      notes: 'Remember to get this done!'
+//    };
+//    addTask(task, taskId);
     Logger.log("done");
-  } catch (err) {
-    Logger.log("[ERROR] " +err.message);
+  } catch (e) {
+    var msg = e.message;
+    Logger.log("[ERROR] " + msg);
   }
 }
 
 
-
 /** Gmail **/
-function retrieveEmails(validSubject, durationMin) {
-
+function searchThreads(validSubject, durationMin) {
+  if (typeof durationMin === "undefined") {
+    durationMin = 20;
+  }
+  
   const t = GmailApp.getInboxThreads(0,100);
   const tlen = t.length;
+  var validEmails = [];
   for (var i = 0; i < tlen; i++) {
-    var m = t[i].getMessages();
-    var mlen = m.length;
-    
-    var subject = m[0].getSubject();
-    Logger.log(subject);
-
-    if (!checkDuration(m[0].getDate(), durationMin) ) { 
-      Logger.log("Id: " + m[0].getId() + " is older " + durationMin + " min. Ignored.");
-      continue;
-    }
+    var messages = t[i].getMessages();
+    var mlen = messages.length;
 
     for (var j=0; j<mlen; j++) {
-      validEmails = retrieve(messages[j], threads[i], validAddress, validEmails);
+      var message = messages[j];
+      if (!checkDuration(message.getDate(), durationMin) ) { 
+        Logger.log("Id: " + message.getId() + " is older " + durationMin + " min. Ignored.");
+        continue;
+      }
+      
+      var subject = message.getSubject();
+      if (!isValidSubject(subject)) {
+        continue;
+      }
+      const validEmail = {
+        "subject" : subject
+        ,"body": message.getPlainBody()
+        ,"date": message.getDate()
+        ,"from": message.getFrom()
+        ,"id":message.getId()
+      }
+      validEmails.push(validEmail);
     }
-
-
   }
+  return validEmails;
+}
 
+function searchMessages(m) {
+
+}
+
+
+function isValidSubject(subject) {
+  const valid = getValidSubject();
+  return (subject.indexOf(valid) === 0)
 }
 
 function checkDuration(date, durationMin) {
@@ -110,6 +142,10 @@ function addTask(task, taskListId) {
   Logger.log('Task with ID "%s" was created.', task.id);
 }
 
+function createTask(message) {
+  var task = {};
+  task["title"] = message.getPlainBody()
+}
 
 /** Exception **/
 function UserException(message) {
