@@ -15,20 +15,26 @@ https://github.com/googlesamples/apps-script/tree/master/simple_tasks
 
 function productionMain() {
   try{
-    const taskId = getTaskId("Alwaysgoogle");
+    const taskId = getTaskId(getTaskListName());
     const validSubject = getValidSubject();
-    const emails = searchThreads(validSubject);
+    //const emails = searchThreads(validSubject);
+    const emails = searchOneEmail("160ead68f5541031");
+    addTasks(emails, taskId);
     
-    //    var task = {
-//      tite: 'Pick up dry cleaning',
-//      notes: 'Remember to get this done!'
-//    };
-//    addTask(task, taskId);
     Logger.log("done");
   } catch (e) {
     var msg = e.message;
     Logger.log("[ERROR] " + msg);
   }
+}
+
+
+function searchOneEmail(id) {
+  const message = GmailApp.getMessageById(id);
+  const validEmail = createValidEmail(message);
+  var validEmails = [];
+  validEmails.push(validEmail);
+  return validEmails;
 }
 
 
@@ -56,17 +62,24 @@ function searchThreads(validSubject, durationMin) {
       if (!isValidSubject(subject)) {
         continue;
       }
-      const validEmail = {
-        "subject" : subject
-        ,"body": message.getPlainBody()
-        ,"date": message.getDate()
-        ,"from": message.getFrom()
-        ,"id":message.getId()
-      }
+
+      const validEmail = createValidEmail(message);
       validEmails.push(validEmail);
     }
   }
   return validEmails;
+}
+
+function createValidEmail(m) {
+  //TODO: Check if m is message object
+  const validEmail = {
+    subject : m.getSubject()
+    ,body: m.getPlainBody()
+    ,date: m.getDate()
+    ,from: m.getFrom()
+    ,id:m.getId()
+  }
+  return validEmail;
 }
 
 function searchMessages(m) {
@@ -92,8 +105,8 @@ function checkDuration(date, durationMin) {
 function retrieveValidEmails(validAddress, durationMin, durationMinCleanTag) {
   if (typeof durationMinCleanTag === "undefined") { durationMinCleanTag = 60*24*1; }
   var validEmails = [];
-  var threads = GmailApp.getInboxThreads(0,100);
-  var tlen = threads.length;
+  const threads = GmailApp.getInboxThreads(0,100);
+  const tlen = threads.length;
   for (var i = 0; i < tlen; i++) {
     var messages = threads[i].getMessages();
     var mlen = messages.length;
@@ -131,6 +144,28 @@ function getTaskId(name) {
   return "";
 }
 
+function addTasks(emails, taskListId) {
+  const len = emails.length;
+  for (var i=0; i<len; i++) {
+    const email = emails[i];
+    const task = {
+      title: getTaskTitleFromSubject(email["subject"])
+      ,notes: getNoteFromBody(email["body"]) 
+    }
+    addTask(task, taskListId);
+  }
+}
+
+function getTaskTitleFromSubject(subject) {
+  const postFix = getValidSubject();
+  const sanitized = subject.replace(postFix, "");
+  return sanitized;
+}
+
+function getNoteFromBody(body) {
+  var bodyArray = stringToArray(body);
+  return bodyArray[0];
+}
 
 function addTask(task, taskListId) {
   var title = task["title"];
