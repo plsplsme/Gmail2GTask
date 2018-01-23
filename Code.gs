@@ -11,16 +11,19 @@ TODO
 REFERENCE
 https://developers.google.com/apps-script/advanced/tasks
 https://github.com/googlesamples/apps-script/tree/master/simple_tasks
+
+You cannot use Archive to mark the email processed.
+(Even though you arcive the thread, the thread back to the inbox once you get same subject email)
+Maybe deleting message is more easy (message stays in trash for 30 days)
 */
 
 function productionMain() {
   try{
     const taskId = getTaskId(getTaskListName());
     const validSubject = getValidSubject();
-    //const emails = searchThreads(validSubject);
-    const emails = searchOneEmail("160ead68f5541031");
+    const emails = searchThreads(validSubject);
+    //const emails = searchOneEmail("160ead68f5541031");
     addTasks(emails, taskId);
-    
     Logger.log("done");
   } catch (e) {
     var msg = e.message;
@@ -48,7 +51,8 @@ function searchThreads(validSubject, durationMin) {
   const tlen = t.length;
   var validEmails = [];
   for (var i = 0; i < tlen; i++) {
-    var messages = t[i].getMessages();
+    var thread = t[i];
+    var messages = thread.getMessages();
     var mlen = messages.length;
 
     for (var j=0; j<mlen; j++) {
@@ -60,6 +64,7 @@ function searchThreads(validSubject, durationMin) {
       
       var subject = message.getSubject();
       if (!isValidSubject(subject)) {
+        Logger.log("Subject:" + subject + " is not valid. Ignored");
         continue;
       }
 
@@ -81,11 +86,6 @@ function createValidEmail(m) {
   }
   return validEmail;
 }
-
-function searchMessages(m) {
-
-}
-
 
 function isValidSubject(subject) {
   const valid = getValidSubject();
@@ -146,6 +146,7 @@ function getTaskId(name) {
 
 function addTasks(emails, taskListId) {
   const len = emails.length;
+  Logger.log("Valid message is " + len);
   for (var i=0; i<len; i++) {
     const email = emails[i];
     const task = {
@@ -153,6 +154,7 @@ function addTasks(emails, taskListId) {
       ,notes: getNoteFromBody(email["body"]) 
     }
     addTask(task, taskListId);
+    deleteMessage(email["id"]);
   }
 }
 
@@ -175,6 +177,12 @@ function addTask(task, taskListId) {
   
   var ret = Tasks.Tasks.insert(task, taskListId);
   Logger.log('Task with ID "%s" was created.', task.id);
+}
+
+function deleteMessage(id) {
+  const m = GmailApp.getMessageById(id);
+  m.moveToTrash();
+  Logger.log('Message "%s" was deleted.', id);
 }
 
 function createTask(message) {
