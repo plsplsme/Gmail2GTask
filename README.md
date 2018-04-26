@@ -1,5 +1,5 @@
 # Gmail2GTask
-The app create Gmail task out of your email.
+The google app script create Gmail task out of your email.
 This is still under development.
 
 ## How to use
@@ -10,7 +10,7 @@ For example:
 Subject: G2T_ADD_TASK Check the cat food  
 Body: How many cat food we have?  
 
-By sending above email, GAS creates Task like following.
+By sending above email, GAS creates Task like following.  
 Title: Check the cat food  
 Note: How many cat food we have?  
 
@@ -18,7 +18,7 @@ Gmail2Task only parse fist line of the body.
 
 ## How to install
 
-Set following script properties.
+Copy *.gs files to google app script and set following script properties.
 
 VALID_SUBJECT: Prefix of the subject. In above example, it is "G2T_ADD_TASK".  
 TAKS_LIST_NAME: Task list name you want to put the Task into.
